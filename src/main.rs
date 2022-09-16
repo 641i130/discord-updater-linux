@@ -83,11 +83,24 @@ async fn main() {
         .output()
         .await
         .expect("cp new discord to old discord failed.");
+    println!("\tCopied!");
+    println!("Making discord binary executable...");
     Command::new("sudo")
         .args(["chmod","+x","/opt/discord/Discord"])
         .output()
         .await
         .expect("Failed to set discord as an executable");
-
+    println!("\tSuccess!");
+    println!("Linking /opt/discord to /usr/share ...");
+    Command::new("sudo")
+        .args(["ln", "-s", "/opt/discord", "/usr/share/discord"])
+        .output()
+        .await
+        .expect("ln /opt/discord to /usr/share/discord failed");
+    println!("\tLinked!");
+    println!("Cleaning up...");
+    fs::remove_dir_all("/tmp/Discord").expect("Removal of /tmp/discord failed");
+    fs::remove_file("/tmp/discord.tar.gz").expect("Removal of /tmp/discord.tar.gz failed");
+    println!("Removed /tmp files!");
     println!("Completed!");
 }
