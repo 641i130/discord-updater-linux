@@ -31,7 +31,7 @@ pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<(),
 
     // download chunks
     if Path::new(path).exists() {
-        fs::remove_file(path);
+        fs::remove_file(path).expect("Removal of {path} failed.");
     }
     let mut file = File::create(path).or(Err(format!("Failed to create file '{}'", path)))?;
     let mut downloaded: u64 = 0;
@@ -64,17 +64,30 @@ async fn main() {
     // Download newest tar
     download_file(&client,&url,&path).await.expect("Download failed."); 
     // un tar file into /tmp
-    let tar_status = Command::new("tar") 
+    println!("Extract tar file...");
+    Command::new("tar") 
         .args(["-xvf", "/tmp/discord.tar.gz", "-C", "/tmp/"])
-        .status()
+        .output()
         .await
         .expect("tar extract failed! Is tar installed?");
-    println!("process finished with: {tar_status}");
+    println!("Extracted!");
     // cp tar content to /opt (default dir in arch linux)
-    let cp_status = Command::new("cp")
-        .args(["-r", "/tmp/Discord/*", "/opt/Discord/"])
-        .status()
+    println!("Checking if /opt/discord exists...");
+    if Path::new("/opt/discord/").exists() {
+        println!("IT DOES! Deleting...");
+        fs::remove_dir_all("/opt/discord/").expect("Removal of /opt/discord failed");
+    }
+    println!("Copying new discord files to original folder...");
+    Command::new("sudo")
+        .args(["cp","-R", "/tmp/Discord/", "/opt/discord/"])
+        .output()
         .await
         .expect("cp new discord to old discord failed.");
+    Command::new("sudo")
+        .args(["chmod","+x","/opt/discord/Discord"])
+        .output()
+        .await
+        .expect("Failed to set discord as an executable");
+
     println!("Completed!");
 }
